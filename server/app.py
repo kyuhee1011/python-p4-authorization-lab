@@ -18,6 +18,29 @@ db.init_app(app)
 
 api = Api(app)
 
+@app.before_request
+def is_member_only():
+    #if user is logged in then they can see everything
+    #if user is not logged in then they can see everything except 
+    #member index and member article 
+    #article_list, show_article,login, check_session', logout, clear
+
+    if not session.get('user_id')\
+        and (request.endpoint == 'member_article'\
+        or request.endpoint == 'member_index'):       
+        return {'error':'Unauthorized'},401 
+    
+
+
+    # if not session['user_id'] \
+    #     and request.endpoint != 'login':
+    #     return {'error': 'Unauthorized'}, 401
+    # elif request.endpoint !='member_index'\
+    #     and request.endpoint !='member_article':    
+    #     print ("Unauthorized member", request.endpoint)
+    #     return {'error':'Unauthorized'},401
+        
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -50,6 +73,7 @@ class ShowArticle(Resource):
             return {'message': 'Maximum pageview limit reached'}, 401
 
         return article_json, 200
+
 
 class Login(Resource):
 
@@ -84,15 +108,22 @@ class CheckSession(Resource):
         
         return {}, 401
 
+
+
 class MemberOnlyIndex(Resource):
     
-    def get(self):
-        pass
+    def get(self):    
+
+        articles = Article.query.all()
+        return [article.to_dict() for article in articles if article.is_member_only == True],200
+        
 
 class MemberOnlyArticle(Resource):
     
     def get(self, id):
-        pass
+        articles =Article.query.filter(Article.id==id).first()
+        article_data=articles.to_dict()
+        return article_data, 200
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(IndexArticle, '/articles', endpoint='article_list')
